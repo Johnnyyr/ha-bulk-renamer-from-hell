@@ -2,10 +2,10 @@
 {
   "domain": "ha_bulk_renamer_from_hell",
   "name": "HA Bulk Renamer from Hell",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "documentation": "https://github.com/Johnnyyr/ha-bulk-renamer-from-hell",
   "issue_tracker": "https://github.com/Johnnyyr/ha-bulk-renamer-from-hell/issues",
-  "integration_type": "helper",
+  "integration_type": "integration",
   "iot_class": "local_push",
   "requirements": [],
   "dependencies": [],

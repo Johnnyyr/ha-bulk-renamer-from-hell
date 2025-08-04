@@ -34,6 +34,8 @@ class BulkEntityRenamer extends HTMLElement {
         .btn-secondary { background: #6c757d; color: white; }
       </style>
       <div class="container">
+  <div id="loading-indicator" style="display:none; text-align:center; margin:10px 0; color:#007bff; font-weight:bold;">Lade...</div>
+  <div id="error-banner" style="display:none; background:#dc3545; color:white; padding:10px; border-radius:5px; margin-bottom:10px;"></div>
         <div class="header">
           <h1>HA Bulk Renamer from Hell 🤘</h1>
           <p>Bulk-Umbenennung von Home Assistant Entities mit Vorschau und Änderungsprotokoll</p>
@@ -85,25 +87,35 @@ class BulkEntityRenamer extends HTMLElement {
     // Load entities handler
     this.querySelector("#load").onclick = async () => {
       const filterValue = this.querySelector("#filter").value.trim();
+      const errorBanner = this.querySelector("#error-banner");
+      errorBanner.style.display = "none";
+      errorBanner.textContent = "";
       if (!filterValue) {
-        alert("Bitte einen Filter eingeben!");
+        errorBanner.textContent = "Bitte einen Filter eingeben!";
+        errorBanner.style.display = "block";
         return;
       }
-      
+      const loading = this.querySelector("#loading-indicator");
+      loading.style.display = "block";
+      this.querySelector("#load").disabled = true;
       try {
         const resp = await hass.callWS({
           type: "ha_bulk_renamer_from_hell/get_entities",
           filter: filterValue
         });
-        
         if (resp.entities && resp.entities.length > 0) {
           this.renderEntityList(resp.entities);
           this.querySelector("#results-section").style.display = "block";
         } else {
-          alert(`Keine Entities mit Filter '${filterValue}' gefunden.`);
+          errorBanner.textContent = `Keine Entities mit Filter '${filterValue}' gefunden.`;
+          errorBanner.style.display = "block";
         }
       } catch (error) {
-        alert(`Fehler beim Laden der Entities: ${error.message}`);
+        errorBanner.textContent = `Fehler beim Laden der Entities: ${error.message}`;
+        errorBanner.style.display = "block";
+      } finally {
+        loading.style.display = "none";
+        this.querySelector("#load").disabled = false;
       }
     };
     
@@ -219,23 +231,22 @@ class BulkEntityRenamer extends HTMLElement {
   
   async applyChanges(hass) {
     const changes = this.getChanges();
-    
+    const errorBanner = this.querySelector("#error-banner");
+    errorBanner.style.display = "none";
+    errorBanner.textContent = "";
     if (changes.length === 0) {
-      alert("Keine Änderungen zum Anwenden!");
+      errorBanner.textContent = "Keine Änderungen zum Anwenden!";
+      errorBanner.style.display = "block";
       return;
     }
-    
-    const renameMap = {};
-    changes.forEach(change => {
-      renameMap[change.oldId] = change.newId;
-    });
-    
+    const loading = this.querySelector("#loading-indicator");
+    loading.style.display = "block";
+    this.querySelector("#apply").disabled = true;
     try {
       const resp = await hass.callWS({
         type: "ha_bulk_renamer_from_hell/rename_entities",
         rename_map: renameMap
       });
-      
       // Log the operation
       const timestamp = new Date().toLocaleString('de-DE');
       this.changeLog.push({
@@ -246,21 +257,24 @@ class BulkEntityRenamer extends HTMLElement {
         successfulCount: resp.successful_count || 0,
         errorCount: resp.error_count || 0
       });
-      
       this.updateChangeLog();
       this.querySelector("#change-log-section").style.display = "block";
       this.querySelector("#preview-section").style.display = "none";
-      
       // Show result
       if (resp.error_count > 0) {
         const errorList = Object.entries(resp.errors).map(([id, error]) => `${id}: ${error}`).join('\n');
-        alert(`Umbenennung teilweise erfolgreich:\n✅ ${resp.successful_count} erfolgreich\n❌ ${resp.error_count} Fehler\n\nFehler:\n${errorList}`);
+        errorBanner.textContent = `Umbenennung teilweise erfolgreich:\n✅ ${resp.successful_count} erfolgreich\n❌ ${resp.error_count} Fehler\n\nFehler:\n${errorList}`;
+        errorBanner.style.display = "block";
       } else {
-        alert(`🎉 Alle ${resp.successful_count} Entities erfolgreich umbenannt!`);
+        errorBanner.textContent = `🎉 Alle ${resp.successful_count} Entities erfolgreich umbenannt!`;
+        errorBanner.style.display = "block";
       }
-      
     } catch (error) {
-      alert(`Fehler beim Umbenennen: ${error.message}`);
+      errorBanner.textContent = `Fehler beim Umbenennen: ${error.message}`;
+      errorBanner.style.display = "block";
+    } finally {
+      loading.style.display = "none";
+      this.querySelector("#apply").disabled = false;
     }
   }
   

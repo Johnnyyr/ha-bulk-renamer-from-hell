@@ -59,6 +59,17 @@ Ein metal-inspiriertes Home Assistant Custom Component für das Bulk-Umbenennen 
 - **Entity Registry**: Nur Entities im Entity Registry können umbenannt werden
 - **Eindeutige IDs**: Neue Entity-IDs müssen eindeutig sein
 
+## 🏷️ Mindestanforderungen & Einschränkungen
+
+- **Home Assistant Version:** Getestet ab **2023.6** (ältere Versionen werden nicht unterstützt)
+- **HACS:** Empfohlen ab Version 1.30
+- **Panel-Entfernung:** Das Panel kann über den Service `ha_bulk_renamer_from_hell.remove_panel` entfernt werden
+- **Bekannte Einschränkungen:**
+  - Keine Unterstützung für Entities außerhalb des Entity Registry
+  - Keine automatische Rücknahme von Umbenennungen
+  - Panel und Umbenennung nur für Admin-User sichtbar
+  - Sehr große Installationen (>1000 Entities) können zu längeren Ladezeiten führen
+
 ## 🐛 Fehlerbehebung
 
 ### Logs aktivieren:
