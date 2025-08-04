@@ -242,6 +242,10 @@ class BulkEntityRenamer extends HTMLElement {
     const loading = this.querySelector("#loading-indicator");
     loading.style.display = "block";
     this.querySelector("#apply").disabled = true;
+    const renameMap = {};
+    changes.forEach(change => {
+      renameMap[change.oldId] = change.newId;
+    });
     try {
       const resp = await hass.callWS({
         type: "ha_bulk_renamer_from_hell/rename_entities",
