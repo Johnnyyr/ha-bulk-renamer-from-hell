@@ -1,10 +1,9 @@
-
 {
-  "name": "ha-bulk-renamer-from-hell",
-  "metadata": {
-    "display_name": "HA Bulk Renamer from Hell",
-    "description": "Bulk rename Home Assistant entities via metal-inspired GUI",
-    "documentation": "https://github.com/Johnnyyr/ha-bulk-renamer-from-hell",
-    "tags": ["frontend", "entity", "rename", "hell"]
-  }
+  "name": "HA Bulk Renamer from Hell",
+  "content_in_root": false,
+  "description": "Metal-inspired GUI for bulk renaming Home Assistant entities.",
+  "filename": "custom_components/ha_bulk_renamer_from_hell",
+  "homeassistant": "2024.0.0",
+  "country": ["DE"],
+  "persistent_directory": null
 }
