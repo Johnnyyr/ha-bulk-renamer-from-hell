@@ -1,22 +1,28 @@
 
 from .websocket_api import setup_websocket
 import logging
+from homeassistant.core import HomeAssistant
+from homeassistant.config_entries import ConfigEntry
+from typing import Any
 
 _LOGGER = logging.getLogger(__name__)
 DOMAIN = "ha_bulk_renamer_from_hell"
 
-async def async_setup(hass, config):
+async def async_setup(hass: HomeAssistant, config: dict[str, Any]) -> bool:
     """Set up the HA Bulk Renamer from Hell component."""
-    # Only setup if domain is in config or if we want auto-setup
-    if DOMAIN not in config:
-        # Auto-setup without config entry
-        await _setup_panel(hass)
-        return True
-    
+    # This component doesn't need configuration - just setup the panel
     await _setup_panel(hass)
     return True
 
-async def _setup_panel(hass):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Set up from a config entry - not used but required for some HA versions."""
+    return True
+
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+    """Unload a config entry."""
+    return True
+
+async def _setup_panel(hass: HomeAssistant) -> None:
     """Setup the panel and services."""
     _LOGGER.info("Setting up HA Bulk Renamer from Hell panel")
     
