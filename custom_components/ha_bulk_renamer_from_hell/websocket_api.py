@@ -1,0 +1,110 @@
+
+import logging
+import homeassistant.helpers.entity_registry as er
+from homeassistant.components import websocket_api
+
+_LOGGER = logging.getLogger(__name__)
+
+def setup_websocket(hass):
+    @websocket_api.websocket_command({
+        "type": "ha_bulk_renamer_from_hell/get_entities",
+        "filter": str,
+    })
+    @websocket_api.async_response
+    async def handle_get_entities(hass, connection, msg):
+        try:
+            filter_text = msg.get("filter", "").strip().lower()
+            if not filter_text:
+                connection.send_error(msg["id"], "invalid_filter", "Filter cannot be empty")
+                return
+            
+            _LOGGER.debug("Searching entities with filter: %s", filter_text)
+            registry = er.async_get(hass)
+            result = []
+            
+            for entity in registry.entities.values():
+                entity_id_lower = entity.entity_id.lower()
+                name_lower = (entity.original_name or "").lower()
+                
+                if filter_text in entity_id_lower or filter_text in name_lower:
+                    result.append({
+                        "entity_id": entity.entity_id,
+                        "name": entity.original_name or entity.entity_id,
+                        "area_id": entity.area_id,
+                        "device_id": entity.device_id
+                    })
+            
+            _LOGGER.info("Found %d entities matching filter '%s'", len(result), filter_text)
+            connection.send_result(msg["id"], {"entities": result})
+            
+        except Exception as err:
+            _LOGGER.error("Error getting entities: %s", err)
+            connection.send_error(msg["id"], "get_entities_failed", str(err))
+
+    @websocket_api.websocket_command({
+        "type": "ha_bulk_renamer_from_hell/rename_entities",
+        "rename_map": dict,
+    })
+    @websocket_api.async_response
+    async def handle_rename_entities(hass, connection, msg):
+        try:
+            rename_map = msg.get("rename_map", {})
+            if not rename_map:
+                connection.send_error(msg["id"], "invalid_rename_map", "Rename map cannot be empty")
+                return
+            
+            _LOGGER.info("Starting bulk rename operation for %d entities", len(rename_map))
+            registry = er.async_get(hass)
+            errors = {}
+            successful_renames = []
+            
+            # Validate all entity IDs first
+            for old_id, new_id in rename_map.items():
+                if not old_id or not new_id:
+                    errors[old_id] = "Entity ID cannot be empty"
+                    continue
+                    
+                if old_id == new_id:
+                    errors[old_id] = "New entity ID is the same as current ID"
+                    continue
+                    
+                # Check if old entity exists
+                if not registry.async_get(old_id):
+                    errors[old_id] = "Entity not found in registry"
+                    continue
+                    
+                # Check if new entity ID already exists
+                if registry.async_get(new_id):
+                    errors[old_id] = f"Entity ID '{new_id}' already exists"
+                    continue
+            
+            # Perform renames for valid entities
+            for old_id, new_id in rename_map.items():
+                if old_id in errors:
+                    continue
+                    
+                try:
+                    await registry.async_update_entity(old_id, new_entity_id=new_id)
+                    successful_renames.append({"old_id": old_id, "new_id": new_id})
+                    _LOGGER.debug("Successfully renamed %s to %s", old_id, new_id)
+                except Exception as err:
+                    error_msg = str(err)
+                    errors[old_id] = error_msg
+                    _LOGGER.error("Failed to rename %s to %s: %s", old_id, new_id, error_msg)
+            
+            _LOGGER.info("Bulk rename completed: %d successful, %d failed", len(successful_renames), len(errors))
+            connection.send_result(msg["id"], {
+                "errors": errors,
+                "successful_renames": successful_renames,
+                "total_requested": len(rename_map),
+                "successful_count": len(successful_renames),
+                "error_count": len(errors)
+            })
+            
+        except Exception as err:
+            _LOGGER.error("Unexpected error during bulk rename: %s", err)
+            connection.send_error(msg["id"], "rename_entities_failed", str(err))
+    
+    # Register the websocket commands
+    websocket_api.async_register_command(hass, handle_get_entities)
+    websocket_api.async_register_command(hass, handle_rename_entities)

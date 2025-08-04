@@ -1,0 +1,7 @@
+{
+  "name": "HA Bulk Renamer from Hell",
+  "content_in_root": false,
+  "filename": "ha_bulk_renamer_from_hell.zip",
+  "render_readme": true,
+  "homeassistant": "2024.1.0"
+}
